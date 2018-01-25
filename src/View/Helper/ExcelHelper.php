@@ -14,6 +14,7 @@ use Cake\ORM\Query;
 use Cake\ORM\ResultSet;
 use Cake\View\Helper;
 use Cake\View\View;
+use PHPExcel_Cell_DataType;
 
 /*
  * The MIT License
@@ -173,13 +174,37 @@ class ExcelHelper extends Helper
             $columnIndex = isset($options['column']) ? $options['column'] : 0;
             foreach ($row as $cell) {
                 if (is_array($cell)) {
-                    $cell = null; // adding cells of this Type is useless
+                    if(empty($cell['value'])){
+                        $cell['value'] = '';
+                    }
+                    if(empty($cell['type'])){
+                        $type = PHPExcel_Cell_DataType::TYPE_STRING2;
+                    }else{
+                        switch ($cell['type']){
+                            case 'string':
+                                $type = PHPExcel_Cell_DataType::TYPE_STRING2;
+                                break;
+                            case 'number':
+                                $type = PHPExcel_Cell_DataType::TYPE_NUMERIC;
+                                break;
+                            case 'boolean':
+                                $type = PHPExcel_Cell_DataType::TYPE_BOOL;
+                                break;
+                            case 'inline':
+                                $type = PHPExcel_Cell_DataType::TYPE_INLINE;
+                                break;
+                        }
+                    }
+                    $this->_View->PHPExcel->getActiveSheet()->getCellByColumnAndRow($columnIndex, $rowIndex)->setValueExplicit($cell['value'], $type);
                 } elseif ($cell instanceof Date or $cell instanceof Time or $cell instanceof FrozenDate or $cell instanceof FrozenTime) {
                     $cell = $cell->i18nFormat($this->__dateformat);  // Dates must be convert for Excel
+                    $this->_View->PHPExcel->getActiveSheet()->getCellByColumnAndRow($columnIndex, $rowIndex)->setValue($cell);
                 } elseif ($cell instanceof QueryExpression) {
                     $cell = null;  // @TODO find a way to get the Values and insert them into the Sheet
+                    $this->_View->PHPExcel->getActiveSheet()->getCellByColumnAndRow($columnIndex, $rowIndex)->setValue($cell);
+                }else {
+                    $this->_View->PHPExcel->getActiveSheet()->getCellByColumnAndRow($columnIndex, $rowIndex)->setValue($cell);
                 }
-                $this->_View->PHPExcel->getActiveSheet()->getCellByColumnAndRow($columnIndex, $rowIndex)->setValue($cell);
                 $columnIndex++;
             }
             $rowIndex++;
